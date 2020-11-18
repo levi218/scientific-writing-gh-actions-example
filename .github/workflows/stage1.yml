@@ -7,7 +7,7 @@ name: Pull request automatic checking
 on:
   pull_request:
     branches: [ main ]
-    types: [assigned, opened, synchronize, reopened, edited]
+    types: [opened, synchronize, reopened, edited]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -41,6 +41,11 @@ jobs:
 #         env:
 #           MATRIX_CONTEXT: ${{ toJson(matrix) }}
 #         run: echo "$MATRIX_CONTEXT"
+      - uses: actions-ecosystem/action-remove-labels@v1
+        if: contains(github.event.pull_request.labels.*.name, 'Human changes requested')
+        with:
+          github_token: ${{ secrets.github_token }}
+          labels: Human changes requested
       - uses: actions-ecosystem/action-remove-labels@v1
         if: contains(github.event.pull_request.labels.*.name, 'task 1')
         with:
@@ -211,22 +216,22 @@ jobs:
         run: |
           total_length=0        
           if (( ${{ steps.check_files.outputs.file_goal }} == 1)); then
-            total_length=$(($total_length + $(($(wc -m < "${{ steps.check_files.outputs.file_goal_path }}") +0))))
+            total_length=$(($total_length + $(($(wc -c < "${{ steps.check_files.outputs.file_goal_path }}") +0))))
           fi
           if (( ${{ steps.check_files.outputs.file_problem }} == 1)); then
-            total_length=$(($total_length + $(($(wc -m < "${{ steps.check_files.outputs.file_problem_path }}") +0))))
+            total_length=$(($total_length + $(($(wc -c < "${{ steps.check_files.outputs.file_problem_path }}") +0))))
           fi
           if (( ${{ steps.check_files.outputs.file_relevance }} == 1)); then
-            total_length=$(($total_length + $(($(wc -m < "${{ steps.check_files.outputs.file_relevance_path }}") +0))))
+            total_length=$(($total_length + $(($(wc -c < "${{ steps.check_files.outputs.file_relevance_path }}") +0))))
           fi
           if (( ${{ steps.check_files.outputs.file_research_object }} == 1)); then
-            total_length=$(($total_length + $(($(wc -m < "${{ steps.check_files.outputs.file_research_object_path }}") +0))))
+            total_length=$(($total_length + $(($(wc -c < "${{ steps.check_files.outputs.file_research_object_path }}") +0))))
           fi
           if (( ${{ steps.check_files.outputs.file_research_subject }} == 1)); then
-            total_length=$(($total_length + $(($(wc -m < "${{ steps.check_files.outputs.file_research_subject_path }}") +0))))
+            total_length=$(($total_length + $(($(wc -c < "${{ steps.check_files.outputs.file_research_subject_path }}") +0))))
           fi
           if (( ${{ steps.check_files.outputs.file_tasks }} == 1)); then
-            total_length=$(($total_length + $(($(wc -m < "${{ steps.check_files.outputs.file_tasks_path }}") +0))))
+            total_length=$(($total_length + $(($(wc -c < "${{ steps.check_files.outputs.file_tasks_path }}") +0))))
           fi
           echo ::set-output name=total_length::${total_length}
           echo "$total_length"
@@ -346,9 +351,237 @@ jobs:
     needs: [check_task_number]
     if: needs.check_task_number.outputs.task_number == 2
     steps:
-      - name: Place holder
+      - uses: actions/checkout@v2.1.0
+      - uses: jitterbit/get-changed-files@v1
+        id: files
+        with:
+          format: 'csv'
+      - name: FolderCount
+        id: check_folders
         run: |
-          echo "Running checks on task 2..."
+          folders=()
+          mapfile -d ',' -t modified_files < <(printf '%s,' '${{ steps.files.outputs.all }}')
+          for added_modified_file in "${modified_files[@]}"; do
+            echo "Do something with this ${added_modified_file}."
+            folder=$(echo "${added_modified_file}" | sed 's/\/.*//')
+            folders+=("$folder")
+          done
+          uniqueFolders=()
+          while IFS= read -r -d '' x
+          do
+            if [[ "$x" != ".github" ]]; then
+              uniqueFolders+=("$x")
+            fi
+          done < <(printf "%s\0" "${folders[@]}" | sort -uz)
+          echo "${#uniqueFolders[@]}"
+          if [[ "${uniqueFolders[0]}" =~ ^[0-9]{4}_[A-Za-z_]+$ ]]; then
+              echo ::set-output name=folder_name_valid::1
+          else
+              echo ::set-output name=folder_name_valid::0
+          fi
+          echo ::set-output name=folder_count::${#uniqueFolders[@]}
+          echo ::set-output name=folder_name::${uniqueFolders[0]}
+      - name: Check file existence
+        id: check_files
+        run: |
+          echo "${{ steps.check_folders.outputs.folder_name }}"
+          file_analogs_path="${{ steps.check_folders.outputs.folder_name }}/analogs.md"
+          file_solution_method_selection_path="${{ steps.check_folders.outputs.folder_name }}/solution_method_selection.md"
+          file_analogs=0
+          file_solution_method_selection=0
+          
+          mapfile -d ',' -t modified_files < <(printf '%s,' '${{ steps.files.outputs.all }}')
+          for added_modified_file in "${modified_files[@]}"; do
+            echo "File ${added_modified_file} exists."
+            if [ "${added_modified_file}" = "${file_analogs_path}" ]; then
+              file_analogs=1
+            fi
+            if [ "${added_modified_file}" = "${file_solution_method_selection_path}" ]; then
+              file_solution_method_selection=1
+            fi
+          done
+          
+          echo ::set-output name=file_analogs_path::${file_analogs_path}
+          echo ::set-output name=file_solution_method_selection_path::${file_solution_method_selection_path}
+          
+          echo ::set-output name=file_analogs::${file_analogs}
+          echo ::set-output name=file_solution_method_selection::${file_solution_method_selection}
+          
+          all=0
+          if (( file_analogs == 1 && file_solution_method_selection == 1 )); then
+            all=1
+          fi
+          
+          echo ::set-output name=all::$all
+      - name: Read files' length
+        id: file_length
+        run: |
+          analogs_length=0
+          solution_method_selection_length=0
+          if (( ${{ steps.check_files.outputs.file_analogs }} == 1)); then
+            analogs_length= $(($(wc -m < "${{ steps.check_files.outputs.file_analogs_path }}") +0))
+          fi
+          if (( ${{ steps.check_files.outputs.file_solution_method_selection }} == 1)); then
+            solution_method_selection_length=$(($(wc -m < "${{ steps.check_files.outputs.file_solution_method_selection_path }}") +0))
+          fi
+          echo ::set-output name=analogs_length::${analogs_length}
+          echo ::set-output name=solution_method_selection_length::${solution_method_selection_length}
+          echo "analogs length: $analogs_length"
+          echo "solution_method_selection length: $solution_method_selection_length"
+      - name: Preparing Message
+        id: prepare_message
+        run: |
+          requirement_met=1
+          # single folder check
+          if (( ${{ steps.check_folders.outputs.folder_count }} == 1)); then
+            echo ::set-output name=single_folder::"✔"
+          else
+            echo ::set-output name=single_folder::"❌"
+            requirement_met=0
+          fi     
+          # file check
+          if (( ${{ steps.check_files.outputs.all }} != 1)); then
+            requirement_met=0
+          fi  
+          if (( ${{ steps.check_files.outputs.file_analogs }} == 1)); then
+            echo ::set-output name=file_analogs::"✔"
+          else
+            echo ::set-output name=file_analogs::"❌"          
+          fi          
+          if (( ${{ steps.check_files.outputs.file_solution_method_selection }} == 1)); then
+            echo ::set-output name=file_solution_method_selection::"✔"
+          else
+            echo ::set-output name=file_solution_method_selection::"❌"          
+          fi          
+          
+          # message for file length check
+          if (( ${{ steps.file_length.outputs.analogs_length }} >= 2000)); then
+            echo ::set-output name=analogs_length::"✔"
+          else
+            echo ::set-output name=analogs_length::"❌"          
+            requirement_met=0
+          fi
+
+          if (( ${{ steps.file_length.outputs.solution_method_selection_length }} >= 1000)); then
+            echo ::set-output name=solution_method_selection_length::"✔"
+          else
+            echo ::set-output name=solution_method_selection_length::"❌"          
+            requirement_met=0
+          fi
+
+          if (( ${{ steps.check_folders.outputs.folder_name_valid }} == 1)); then
+            echo ::set-output name=folder_name_valid::"✔"
+          else
+            echo ::set-output name=folder_name_valid::"❌"     
+            requirement_met=0     
+          fi  
+          
+          if (( $requirement_met == 1)); then
+            echo ::set-output name=action::APPROVE
+          else
+            echo ::set-output name=action::REQUEST_CHANGES         
+          fi  
+          
+          echo ::set-output name=requirement_met::${requirement_met}    
+      - name: Sending to external service for further checking
+        id: checking_service
+        run: |
+          # SEND ANALOGS
+          SERVICE_ADR="http://localhost:4444"
+          CRITERIA_NAME="task_2"
+          WORK_FILE_1="${{ steps.check_files.outputs.file_analogs_path }}"
+          WORKNAME_FILE_1=""
+          WORK_FILE_2="${{ steps.check_files.outputs.file_solution_method_selection_path }}"
+          WORKNAME_FILE_2=""
+
+          echo "Адрес сервиса = '$SERVICE_ADR'"
+          echo "Название критерия для проверки = '$CRITERIA_NAME'"
+          echo "Путь к работе 1 = '$WORK_FILE_1'"
+          echo "Файл-название работы 1 = '$WORKNAME_FILE_1'"
+          echo "Путь к работе 2 = '$WORK_FILE_2'"
+          echo "Файл-название работы 2 = '$WORKNAME_FILE_2'"
+
+          # run curl command to send request and get the response in form 'response,return_code'
+
+          RESPONSE=$(curl -w "|%{http_code}" -s \
+                              -F file=@$WORK_FILE_1         \
+                              -F paperName=@$WORKNAME_FILE_1             \
+                              -F criteriaName="$CRITERIA_NAME"         \
+                              $SERVICE_ADR/Home/CurlUploadFile
+                      )
+
+          RESULT_ID=$(echo "$RESPONSE" | cut -d '|' -f 1)
+          RESPONSE_CODE=$(echo "$RESPONSE" | cut -d '|' -f 2)
+
+          # print result 
+          if [ "$RESPONSE_CODE" = "200" ]; then
+            echo "Результат 1: $SERVICE_ADR/Home/Result?id=$RESULT_ID";
+            echo ::set-output name=service_check_analogs::"$SERVICE_ADR/Home/Result?id=$RESULT_ID"
+          else
+            echo "Произошла ошибка.";
+            echo ::set-output name=service_check_analogs::"Произошла ошибка."
+          fi
+
+          RESPONSE=$(curl -w "|%{http_code}" -s \
+                              -F file=@$WORK_FILE_2         \
+                              -F paperName=@$WORKNAME_FILE_2             \
+                              -F criteriaName="$CRITERIA_NAME"         \
+                              $SERVICE_ADR/Home/CurlUploadFile
+                      )
+
+          RESULT_ID=$(echo "$RESPONSE" | cut -d '|' -f 1)
+          RESPONSE_CODE=$(echo "$RESPONSE" | cut -d '|' -f 2)
+
+          # print result 
+          if [ "$RESPONSE_CODE" = "200" ]; then
+            echo "Результат 2: $SERVICE_ADR/Home/Result?id=$RESULT_ID";
+            echo ::set-output name=service_check_solution_method_selection::"$SERVICE_ADR/Home/Result?id=$RESULT_ID"
+          else
+            echo "Произошла ошибка.";
+            echo ::set-output name=service_check_solution_method_selection::"Произошла ошибка."
+          fi
+
+      - name: Approve/Request changes pull request
+        uses: andrewmusgrave/automatic-pull-request-review@0.0.2
+        with:
+          repo-token: '${{ secrets.GITHUB_TOKEN }}'
+          event: ${{ steps.prepare_message.outputs.action }}
+          body: |
+            ## Автоматическая проверка
+            
+            1. Работает только с одним каталогом: ${{ steps.prepare_message.outputs.single_folder }}
+            
+            2. Название каталога: ${{ steps.prepare_message.outputs.folder_name_valid }}
+            
+            3. Присутствуют все необходимые файлы: 
+
+            - analogs.md: ${{ steps.prepare_message.outputs.file_analogs }}   ---->   ${{ steps.file_length.outputs.analogs_length }} знаков ${{ steps.prepare_message.outputs.analogs_length }}
+            - solution_method_selection.md: ${{ steps.prepare_message.outputs.file_solution_method_selection }}   ---->    ${{ steps.file_length.outputs.solution_method_selection_length }} знаков ${{ steps.prepare_message.outputs.solution_method_selection_length }}
+  
+            4. Ссылка на результат проверки сервиса: 
+            
+            - analogs.md: ${{ steps.checking_service.outputs.service_check_analogs }}
+            - solution_method_selection.md: ${{ steps.checking_service.outputs.service_check_solution_method_selection }}
+
+      - name: Add label (approved)
+        uses: actions-ecosystem/action-add-labels@v1
+        if: steps.prepare_message.outputs.requirement_met == 1
+        with:
+          github_token: ${{ secrets.github_token }}
+          labels: bot approved
+      - name: Add label (changes requested)
+        uses: actions-ecosystem/action-add-labels@v1
+        if: steps.prepare_message.outputs.requirement_met == 0
+        with:
+          github_token: ${{ secrets.github_token }}
+          labels: bot changes requested
+      - name: Return exit code
+        run: |
+          if (( ${{ steps.prepare_message.outputs.requirement_met }} == 1)); then
+            exit 0
+          else
+            exit 1
+          fi
   task3:
     runs-on: ubuntu-latest
     needs: [check_task_number]
