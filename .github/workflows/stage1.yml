@@ -521,8 +521,8 @@ jobs:
             echo "Результат 1: $SERVICE_ADR/Home/Result?id=$RESULT_ID";
             echo ::set-output name=service_check_analogs::"$SERVICE_ADR/Home/Result?id=$RESULT_ID"
           else
-            echo "Произошла ошибка.";
-            echo ::set-output name=service_check_analogs::"Произошла ошибка."
+            echo "Произошла ошибка - $RESPONSE_CODE";
+            echo ::set-output name=service_check_analogs::"Произошла ошибка - $RESPONSE_CODE"
           fi
 
           (RESPONSE=$(curl -w "|%{http_code}" -s \
@@ -540,8 +540,8 @@ jobs:
             echo "Результат 2: $SERVICE_ADR/Home/Result?id=$RESULT_ID";
             echo ::set-output name=service_check_solution_method_selection::"$SERVICE_ADR/Home/Result?id=$RESULT_ID"
           else
-            echo "Произошла ошибка.";
-            echo ::set-output name=service_check_solution_method_selection::"Произошла ошибка."
+            echo "Произошла ошибка - $RESPONSE_CODE";
+            echo ::set-output name=service_check_solution_method_selection::"Произошла ошибка - $RESPONSE_CODE"
           fi
 
       - name: Approve/Request changes pull request
