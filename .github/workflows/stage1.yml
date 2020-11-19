@@ -506,13 +506,13 @@ jobs:
 
           # run curl command to send request and get the response in form 'response,return_code'
 
-          # RESPONSE=$(curl -w "|%{http_code}" -s \
-          #                    -F file=@$WORK_FILE_1         \
-          #                    -F paperName=@$WORKNAME_FILE_1             \
-          #                    -F criteriaName="$CRITERIA_NAME"         \
-          #                    $SERVICE_ADR/Home/CurlUploadFile
-          #            )
-          RESPONSE="aa|200"
+          (RESPONSE=$(curl -w "|%{http_code}" -s \
+                             -F file=@$WORK_FILE_1         \
+                              -F paperName=@$WORKNAME_FILE_1             \
+                              -F criteriaName="$CRITERIA_NAME"         \
+                              $SERVICE_ADR/Home/CurlUploadFile
+                      )) || (RESPONSE="aa|999")
+          
           RESULT_ID=$(echo "$RESPONSE" | cut -d '|' -f 1)
           RESPONSE_CODE=$(echo "$RESPONSE" | cut -d '|' -f 2)
           
@@ -525,13 +525,13 @@ jobs:
             echo ::set-output name=service_check_analogs::"Произошла ошибка."
           fi
 
-          # RESPONSE=$(curl -w "|%{http_code}" -s \
-          #                    -F file=@$WORK_FILE_2         \
-          #                    -F paperName=@$WORKNAME_FILE_2             \
-          #                    -F criteriaName="$CRITERIA_NAME"         \
-          #                    $SERVICE_ADR/Home/CurlUploadFile
-          #            )
-          RESPONSE="aa|400"
+          (RESPONSE=$(curl -w "|%{http_code}" -s \
+                              -F file=@$WORK_FILE_2         \
+                              -F paperName=@$WORKNAME_FILE_2             \
+                              -F criteriaName="$CRITERIA_NAME"         \
+                              $SERVICE_ADR/Home/CurlUploadFile
+                      )) || (RESPONSE="aa|999")
+          
           RESULT_ID=$(echo "$RESPONSE" | cut -d '|' -f 1)
           RESPONSE_CODE=$(echo "$RESPONSE" | cut -d '|' -f 2)
 
