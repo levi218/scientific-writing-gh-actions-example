@@ -1,4 +1,7 @@
-# This is a basic workflow to help you get started with Actions
+# There are a few noted disadvantages in design: 
+# - checking that only 1 folder is modified and get that folder's name can be done in a separated job then called from each task's job in order to reuse code.
+# - check file existences is also repeated and it might worth writing a github action with file names as parameters (currently a lot of code is repeated in each task's job for checking this)
+# - github action for removing all labels in a list if it exists might also shorten the code alot. No pre-made exists at the time.
 
 name: Pull request automatic checking
 
