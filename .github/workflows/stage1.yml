@@ -510,7 +510,7 @@ jobs:
                              -F file=@$WORK_FILE_1         \
                               -F paperName=@$WORKNAME_FILE_1             \
                               -F criteriaName="$CRITERIA_NAME"         \
-                              $SERVICE_ADR/Home/CurlUploadFile || echo "aa|999"
+                              $SERVICE_ADR/Home/CurlUploadFile || true
                       )
           
           RESULT_ID=$(echo "$RESPONSE" | cut -d '|' -f 1)
@@ -529,7 +529,7 @@ jobs:
                               -F file=@$WORK_FILE_2         \
                               -F paperName=@$WORKNAME_FILE_2             \
                               -F criteriaName="$CRITERIA_NAME"         \
-                              $SERVICE_ADR/Home/CurlUploadFile || echo "aa|999"
+                              $SERVICE_ADR/Home/CurlUploadFile || true
                       )
           
           RESULT_ID=$(echo "$RESPONSE" | cut -d '|' -f 1)
