@@ -590,6 +590,167 @@ jobs:
     needs: [check_task_number]
     if: needs.check_task_number.outputs.task_number == 3
     steps:
-      - name: Place holder
+      - uses: actions/checkout@v2.1.0
+      - uses: jitterbit/get-changed-files@v1
+        id: files
+        with:
+          format: 'csv'
+      - name: FolderCount
+        id: check_folders
         run: |
-          echo "Running checks on task 3..."
+          folders=()
+          mapfile -d ',' -t modified_files < <(printf '%s,' '${{ steps.files.outputs.all }}')
+          for added_modified_file in "${modified_files[@]}"; do
+            echo "Do something with this ${added_modified_file}."
+            folder=$(echo "${added_modified_file}" | sed 's/\/.*//')
+            folders+=("$folder")
+          done
+          uniqueFolders=()
+          while IFS= read -r -d '' x
+          do
+            if [[ "$x" != ".github" ]]; then
+              uniqueFolders+=("$x")
+            fi
+          done < <(printf "%s\0" "${folders[@]}" | sort -uz)
+          echo "${#uniqueFolders[@]}"
+          if [[ "${uniqueFolders[0]}" =~ ^[0-9]{4}_[A-Za-z_]+$ ]]; then
+              echo ::set-output name=folder_name_valid::1
+          else
+              echo ::set-output name=folder_name_valid::0
+          fi
+          echo ::set-output name=folder_count::${#uniqueFolders[@]}
+          echo ::set-output name=folder_name::${uniqueFolders[0]}
+      - name: Check file existence
+        id: check_files
+        run: |
+          echo "${{ steps.check_folders.outputs.folder_name }}"
+          file_paper_path="${{ steps.check_folders.outputs.folder_name }}/paper.md"
+          file_paper=0
+          
+          mapfile -d ',' -t modified_files < <(printf '%s,' '${{ steps.files.outputs.all }}')
+          for added_modified_file in "${modified_files[@]}"; do
+            echo "File ${added_modified_file} exists."
+            if [ "${added_modified_file}" = "${file_paper_path}" ]; then
+              file_paper=1
+            fi
+          done
+          
+          echo ::set-output name=file_paper_path::${file_paper_path}
+          
+          echo ::set-output name=file_paper::${file_paper}
+          
+          all=0
+          if (( file_paper == 1 )); then
+            all=1
+          fi
+          
+          echo ::set-output name=all::$all
+      - name: Preparing Message
+        id: prepare_message
+        run: |
+          requirement_met=1
+          # single folder check
+          if (( ${{ steps.check_folders.outputs.folder_count }} == 1)); then
+            echo ::set-output name=single_folder::"✔"
+          else
+            echo ::set-output name=single_folder::"❌"
+            requirement_met=0
+          fi     
+          # file check
+          if (( ${{ steps.check_files.outputs.all }} != 1)); then
+            requirement_met=0
+          fi  
+          if (( ${{ steps.check_files.outputs.file_paper }} == 1)); then
+            echo ::set-output name=file_paper::"✔"
+          else
+            echo ::set-output name=file_paper::"❌"          
+          fi                 
+
+          if (( ${{ steps.check_folders.outputs.folder_name_valid }} == 1)); then
+            echo ::set-output name=folder_name_valid::"✔"
+          else
+            echo ::set-output name=folder_name_valid::"❌"     
+            requirement_met=0     
+          fi  
+          
+          if (( $requirement_met == 1)); then
+            echo ::set-output name=action::APPROVE
+          else
+            echo ::set-output name=action::REQUEST_CHANGES         
+          fi  
+          
+          echo ::set-output name=requirement_met::${requirement_met}    
+      - name: Sending to external service for further checking
+        id: checking_service
+        run: |
+          # SEND PAPER
+          SERVICE_ADR="http://scientific-writing.moevm.info"
+          CRITERIA_NAME="task_2"
+          WORK_FILE="${{ steps.check_files.outputs.file_paper_path }}"
+          echo "#auto#" > stub.txt
+          WORKNAME_FILE="stub.txt"
+          echo "Адрес сервиса = '$SERVICE_ADR'"
+          echo "Название критерия для проверки = '$CRITERIA_NAME'"
+          echo "Путь к работе = '$WORK_FILE'"
+          echo "Файл-название работы = '$WORKNAME_FILE'"
+
+          # run curl command to send request and get the response in form 'response,return_code'
+
+          RESPONSE=$(curl -w "|%{http_code}" -s \
+                             -F file=@$WORK_FILE         \
+                             -F paperName=@$WORKNAME_FILE             \
+                             -F criteriaName="$CRITERIA_NAME"         \
+                             $SERVICE_ADR/Home/CurlUploadFile
+                     )
+          echo $RESPONSE
+          RESULT_ID=$(echo "$RESPONSE" | cut -d '|' -f 1)
+          RESPONSE_CODE=$(echo "$RESPONSE" | cut -d '|' -f 2)
+          
+          # print result 
+          if [ "$RESPONSE_CODE" = "200" ]; then
+            echo "Результат: $SERVICE_ADR/Home/Result?id=$RESULT_ID";
+            echo ::set-output name=service_check_paper::"$SERVICE_ADR/Home/Result?id=$RESULT_ID"
+          else
+            echo "Произошла ошибка.";
+            echo ::set-output name=service_check_paper::"Произошла ошибка."
+          fi
+
+      - name: Approve/Request changes pull request
+        uses: andrewmusgrave/automatic-pull-request-review@0.0.2
+        with:
+          repo-token: '${{ secrets.GITHUB_TOKEN }}'
+          event: ${{ steps.prepare_message.outputs.action }}
+          body: |
+            ## Автоматическая проверка
+            
+            1. Работает только с одним каталогом: ${{ steps.prepare_message.outputs.single_folder }}
+            
+            2. Название каталога: ${{ steps.prepare_message.outputs.folder_name_valid }}
+            
+            3. Присутствуют все необходимые файлы: 
+
+            - paper.md: ${{ steps.prepare_message.outputs.file_paper }}
+  
+            4. Ссылка на результат проверки сервиса: 
+            
+            - paper.md: ${{ steps.checking_service.outputs.service_check_paper }}
+
+      - name: Add label (approved)
+        uses: actions-ecosystem/action-add-labels@v1
+        if: steps.prepare_message.outputs.requirement_met == 1
+        with:
+          github_token: ${{ secrets.github_token }}
+          labels: bot approved
+      - name: Add label (changes requested)
+        uses: actions-ecosystem/action-add-labels@v1
+        if: steps.prepare_message.outputs.requirement_met == 0
+        with:
+          github_token: ${{ secrets.github_token }}
+          labels: bot changes requested
+      - name: Return exit code
+        run: |
+          if (( ${{ steps.prepare_message.outputs.requirement_met }} == 1)); then
+            exit 0
+          else
+            exit 1
+          fi
