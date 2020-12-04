@@ -711,8 +711,8 @@ jobs:
             echo "Результат: $SERVICE_ADR/Home/Result?id=$RESULT_ID";
             echo ::set-output name=service_check_paper::"$SERVICE_ADR/Home/Result?id=$RESULT_ID"
           else
-            echo "Произошла ошибка.";
-            echo ::set-output name=service_check_paper::"Произошла ошибка."
+            echo "Произошла ошибка - $RESPONSE_CODE";
+            echo ::set-output name=service_check_paper::"Произошла ошибка - $RESPONSE_CODE"
           fi
 
       - name: Approve/Request changes pull request
