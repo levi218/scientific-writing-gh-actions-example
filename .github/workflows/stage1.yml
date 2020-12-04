@@ -506,13 +506,13 @@ jobs:
 
           # run curl command to send request and get the response in form 'response,return_code'
 
-          # RESPONSE=$(curl -w "|%{http_code}" -s \
-          #                    -F file=@$WORK_FILE_1         \
-          #                    -F paperName=@$WORKNAME_FILE_1             \
-          #                    -F criteriaName="$CRITERIA_NAME"         \
-          #                    $SERVICE_ADR/Home/CurlUploadFile
-          #            )
-          RESPONSE="aa|200"
+          RESPONSE=$(curl -w "|%{http_code}" -s \
+                             -F file=@$WORK_FILE_1         \
+                              -F paperName=@$WORKNAME_FILE_1             \
+                              -F criteriaName="$CRITERIA_NAME"         \
+                              $SERVICE_ADR/Home/CurlUploadFile || true
+                      )
+          
           RESULT_ID=$(echo "$RESPONSE" | cut -d '|' -f 1)
           RESPONSE_CODE=$(echo "$RESPONSE" | cut -d '|' -f 2)
           
@@ -521,17 +521,17 @@ jobs:
             echo "Результат 1: $SERVICE_ADR/Home/Result?id=$RESULT_ID";
             echo ::set-output name=service_check_analogs::"$SERVICE_ADR/Home/Result?id=$RESULT_ID"
           else
-            echo "Произошла ошибка.";
-            echo ::set-output name=service_check_analogs::"Произошла ошибка."
+            echo "Произошла ошибка - $RESPONSE_CODE";
+            echo ::set-output name=service_check_analogs::"Произошла ошибка - $RESPONSE_CODE"
           fi
 
-          # RESPONSE=$(curl -w "|%{http_code}" -s \
-          #                    -F file=@$WORK_FILE_2         \
-          #                    -F paperName=@$WORKNAME_FILE_2             \
-          #                    -F criteriaName="$CRITERIA_NAME"         \
-          #                    $SERVICE_ADR/Home/CurlUploadFile
-          #            )
-          RESPONSE="aa|400"
+          RESPONSE=$(curl -w "|%{http_code}" -s \
+                              -F file=@$WORK_FILE_2         \
+                              -F paperName=@$WORKNAME_FILE_2             \
+                              -F criteriaName="$CRITERIA_NAME"         \
+                              $SERVICE_ADR/Home/CurlUploadFile || true
+                      )
+          
           RESULT_ID=$(echo "$RESPONSE" | cut -d '|' -f 1)
           RESPONSE_CODE=$(echo "$RESPONSE" | cut -d '|' -f 2)
 
@@ -540,8 +540,8 @@ jobs:
             echo "Результат 2: $SERVICE_ADR/Home/Result?id=$RESULT_ID";
             echo ::set-output name=service_check_solution_method_selection::"$SERVICE_ADR/Home/Result?id=$RESULT_ID"
           else
-            echo "Произошла ошибка.";
-            echo ::set-output name=service_check_solution_method_selection::"Произошла ошибка."
+            echo "Произошла ошибка - $RESPONSE_CODE";
+            echo ::set-output name=service_check_solution_method_selection::"Произошла ошибка - $RESPONSE_CODE"
           fi
 
       - name: Approve/Request changes pull request
