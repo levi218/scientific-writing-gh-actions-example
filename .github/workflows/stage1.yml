@@ -700,7 +700,7 @@ jobs:
                              -F file=@$WORK_FILE         \
                              -F paperName=@$WORKNAME_FILE             \
                              -F criteriaName="$CRITERIA_NAME"         \
-                             $SERVICE_ADR/Home/CurlUploadFile
+                             $SERVICE_ADR/Home/CurlUploadFile || true
                      )
           echo $RESPONSE
           RESULT_ID=$(echo "$RESPONSE" | cut -d '|' -f 1)
