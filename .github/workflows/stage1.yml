@@ -710,9 +710,11 @@ jobs:
           if [ "$RESPONSE_CODE" = "200" ]; then
             echo "Результат: $SERVICE_ADR/Home/Result?id=$RESULT_ID";
             echo ::set-output name=service_check_paper::"$SERVICE_ADR/Home/Result?id=$RESULT_ID"
+            echo ::set-output name=service_badge::"[![Link]($SERVICE_ADR/Home/Badge?id=$RESULT_ID)]($SERVICE_ADR/Home/Result?id=$RESULT_ID)"
           else
             echo "Произошла ошибка - $RESPONSE_CODE";
             echo ::set-output name=service_check_paper::"Произошла ошибка - $RESPONSE_CODE"
+            echo ::set-output name=service_badge::"Произошла ошибка - $RESPONSE_CODE"
           fi
 
       - name: Approve/Request changes pull request
@@ -733,7 +735,7 @@ jobs:
   
             4. Ссылка на результат проверки сервиса: 
             
-            - paper.md: ${{ steps.checking_service.outputs.service_check_paper }}
+            - paper.md: ${{ steps.checking_service.outputs.service_badge }} ${{ steps.checking_service.outputs.service_check_paper }}
 
       - name: Add label (approved)
         uses: actions-ecosystem/action-add-labels@v1
