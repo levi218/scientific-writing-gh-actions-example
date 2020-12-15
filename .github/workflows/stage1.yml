@@ -490,12 +490,14 @@ jobs:
         id: checking_service
         run: |
           # SEND ANALOGS
+          touch stub.txt
+
           SERVICE_ADR="http://scientific-writing.moevm.info"
           CRITERIA_NAME="task_2"
           WORK_FILE_1="${{ steps.check_files.outputs.file_analogs_path }}"
-          WORKNAME_FILE_1=""
+          WORKNAME_FILE_1="stub.txt"
           WORK_FILE_2="${{ steps.check_files.outputs.file_solution_method_selection_path }}"
-          WORKNAME_FILE_2=""
+          WORKNAME_FILE_2="stub.txt"
 
           echo "Адрес сервиса = '$SERVICE_ADR'"
           echo "Название критерия для проверки = '$CRITERIA_NAME'"
