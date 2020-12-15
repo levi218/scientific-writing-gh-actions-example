@@ -490,7 +490,7 @@ jobs:
         id: checking_service
         run: |
           # SEND ANALOGS
-          SERVICE_ADR="http://localhost:4444"
+          SERVICE_ADR="http://scientific-writing.moevm.info"
           CRITERIA_NAME="task_2"
           WORK_FILE_1="${{ steps.check_files.outputs.file_analogs_path }}"
           WORKNAME_FILE_1=""
@@ -520,9 +520,11 @@ jobs:
           if [ "$RESPONSE_CODE" = "200" ]; then
             echo "Результат 1: $SERVICE_ADR/Home/Result?id=$RESULT_ID";
             echo ::set-output name=service_check_analogs::"$SERVICE_ADR/Home/Result?id=$RESULT_ID"
+            echo ::set-output name=service_badge_analogs::"[![Link]($SERVICE_ADR/Home/Badge?id=$RESULT_ID)]($SERVICE_ADR/Home/Result?id=$RESULT_ID)"
           else
             echo "Произошла ошибка - $RESPONSE_CODE";
             echo ::set-output name=service_check_analogs::"Произошла ошибка - $RESPONSE_CODE"
+            echo ::set-output name=service_badge_analogs::"Произошла ошибка - $RESPONSE_CODE"
           fi
 
           RESPONSE=$(curl -w "|%{http_code}" -s \
@@ -539,9 +541,11 @@ jobs:
           if [ "$RESPONSE_CODE" = "200" ]; then
             echo "Результат 2: $SERVICE_ADR/Home/Result?id=$RESULT_ID";
             echo ::set-output name=service_check_solution_method_selection::"$SERVICE_ADR/Home/Result?id=$RESULT_ID"
+            echo ::set-output name=service_badge_solution_method_selection::"[![Link]($SERVICE_ADR/Home/Badge?id=$RESULT_ID)]($SERVICE_ADR/Home/Result?id=$RESULT_ID)"
           else
             echo "Произошла ошибка - $RESPONSE_CODE";
             echo ::set-output name=service_check_solution_method_selection::"Произошла ошибка - $RESPONSE_CODE"
+            echo ::set-output name=service_badge_solution_method_selection::"Произошла ошибка - $RESPONSE_CODE"
           fi
 
       - name: Approve/Request changes pull request
@@ -563,8 +567,8 @@ jobs:
   
             4. Ссылка на результат проверки сервиса: 
             
-            - analogs.md: ${{ steps.checking_service.outputs.service_check_analogs }}
-            - solution_method_selection.md: ${{ steps.checking_service.outputs.service_check_solution_method_selection }}
+            - analogs.md: ${{ steps.checking_service.outputs.service_badge_analogs }} ${{ steps.checking_service.outputs.service_check_analogs }}
+            - solution_method_selection.md: ${{ steps.checking_service.outputs.service_badge_solution_method_selection }} ${{ steps.checking_service.outputs.service_check_solution_method_selection }}
 
       - name: Add label (approved)
         uses: actions-ecosystem/action-add-labels@v1
@@ -685,7 +689,7 @@ jobs:
         run: |
           # SEND PAPER
           SERVICE_ADR="http://scientific-writing.moevm.info"
-          CRITERIA_NAME="task_2"
+          CRITERIA_NAME="task_3"
           WORK_FILE="${{ steps.check_files.outputs.file_paper_path }}"
           echo "#auto#" > stub.txt
           WORKNAME_FILE="stub.txt"
