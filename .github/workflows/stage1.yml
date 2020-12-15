@@ -567,8 +567,8 @@ jobs:
   
             4. Ссылка на результат проверки сервиса: 
             
-            - analogs.md: ${{ steps.checking_service.outputs.service_badge_analogs }} ${{ steps.checking_service.outputs.service_check_analogs }}
-            - solution_method_selection.md: ${{ steps.checking_service.outputs.service_badge_solution_method_selection }} ${{ steps.checking_service.outputs.service_check_solution_method_selection }}
+            - analogs.md: ${{ steps.checking_service.outputs.service_badge_analogs }}
+            - solution_method_selection.md: ${{ steps.checking_service.outputs.service_badge_solution_method_selection }}
 
       - name: Add label (approved)
         uses: actions-ecosystem/action-add-labels@v1
@@ -739,7 +739,7 @@ jobs:
   
             4. Ссылка на результат проверки сервиса: 
             
-            - paper.md: ${{ steps.checking_service.outputs.service_badge }} ${{ steps.checking_service.outputs.service_check_paper }}
+            - paper.md: ${{ steps.checking_service.outputs.service_badge }}
 
       - name: Add label (approved)
         uses: actions-ecosystem/action-add-labels@v1
