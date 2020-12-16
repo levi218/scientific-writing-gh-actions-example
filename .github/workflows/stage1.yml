@@ -592,7 +592,7 @@ jobs:
             exit 1
           fi
   task3:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: [check_task_number]
     if: needs.check_task_number.outputs.task_number == 3
     steps:
