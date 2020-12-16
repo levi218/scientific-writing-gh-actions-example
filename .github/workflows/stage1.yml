@@ -694,14 +694,13 @@ jobs:
           CRITERIA_NAME="task_3"
           WORK_FILE="${{ steps.check_files.outputs.file_paper_path }}"
           echo #auto#>stub.txt
+          cat $WORKNAME_FILE
           WORKNAME_FILE="stub.txt"
           echo "Адрес сервиса = '$SERVICE_ADR'"
           echo "Название критерия для проверки = '$CRITERIA_NAME'"
           echo "Путь к работе = '$WORK_FILE'"
           echo "Файл-название работы = '$WORKNAME_FILE'"
-          cat $WORK_FILE
-          cat $WORKNAME_FILE
-
+          curl -V
           # run curl command to send request and get the response in form 'response,return_code'
 
           RESPONSE=$(curl -w "|%{http_code}" -s \
