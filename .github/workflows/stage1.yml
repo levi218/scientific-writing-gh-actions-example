@@ -693,7 +693,7 @@ jobs:
           SERVICE_ADR="http://scientific-writing.moevm.info"
           CRITERIA_NAME="task_3"
           WORK_FILE="${{ steps.check_files.outputs.file_paper_path }}"
-          echo "#auto#" > stub.txt
+          echo #auto#>stub.txt
           WORKNAME_FILE="stub.txt"
           echo "Адрес сервиса = '$SERVICE_ADR'"
           echo "Название критерия для проверки = '$CRITERIA_NAME'"
