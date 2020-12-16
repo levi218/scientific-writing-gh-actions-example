@@ -699,6 +699,8 @@ jobs:
           echo "Название критерия для проверки = '$CRITERIA_NAME'"
           echo "Путь к работе = '$WORK_FILE'"
           echo "Файл-название работы = '$WORKNAME_FILE'"
+          cat $WORK_FILE
+          cat $WORKNAME_FILE
 
           # run curl command to send request and get the response in form 'response,return_code'
 
